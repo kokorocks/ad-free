@@ -13,7 +13,7 @@
         src.includes("adservice") ||
         src.includes("googletagservices") ||
         src.includes("tracking") ||
-        (node.innerText && node.innerText.match(/ad|googletag|track/i))
+        (node.innerText && /ad|googletag|track/i.test(node.innerText))
       ) {
         node.remove();
         return;
@@ -29,11 +29,12 @@
       }
     }
 
+    // Normalize ID and className to strings
+    const id = (node.id || "").toString().toLowerCase();
+    const className = (node.className || "").toString().toLowerCase();
+
     // Remove elements with ad/sponsor IDs or classes
-    if (
-      (node.id && node.id.toLowerCase().includes("ad")) ||
-      (node.className && node.className.toLowerCase().match(/ad|sponsor/))
-    ) {
+    if (id.includes("ad") || id.includes("sponsor") || className.match(/ad|sponsor/)) {
       node.remove();
       return;
     }
