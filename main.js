@@ -34,7 +34,7 @@
     const className = (node.className || "").toString().toLowerCase();
 
     // Remove elements with ad/sponsor IDs or classes
-    if (id.includes("ad") || id.includes("sponsor") || className.match(/ad|sponsor/)) {
+    if (id.includes("ads") || id.includes("sponsor") || className.match(/ad|sponsor/)) {
       node.remove();
       return;
     }
