@@ -23,7 +23,7 @@
     // Remove iframes
     if (node.tagName === "IFRAME") {
       const src = (node.src || "").toLowerCase();
-      if (src.includes("ads") || src.includes("doubleclick") || src.includes("adservice")) {
+      if (src.includes("ads") || src.includes("doubleclick") || src.includes("banner") || src.includes("adservice")) {
         node.remove();
         return;
       }
@@ -34,7 +34,7 @@
     const className = (node.className || "").toString().toLowerCase();
 
     // Remove elements with ad/sponsor IDs or classes
-    if (id.includes("ads") || id.includes("sponsor") || className.match(/ad|sponsor/)) {
+    if (id.includes("ads") || id.includes("sponsor") || id.includes("banner") ||  className.match(/ads|sponsor|banner/)) {
       node.remove();
       return;
     }
