@@ -65,3 +65,46 @@
 
   console.log("🚫 MutationObserver ad cleaner is running asynchronously...");
 })();
+
+
+
+// ------------------------------------------------------- element remover --------------------------------------------------------------------//
+
+(function() {
+    function handleClick(event) {
+        event.stopPropagation();
+        const el = event.target;
+
+        // Ask for confirmation
+        if (!confirm("Do you really want to delete this element?")) {
+            return; // If user cancels, do nothing
+        }
+
+        // Get current height and width
+        const height = el.offsetHeight;
+        const width = el.offsetWidth;
+
+        // Set explicit sizes for smooth animation
+        el.style.height = height + "px";
+        el.style.width = width + "px";
+        el.style.transition = "opacity 0.5s ease, height 0.5s ease, width 0.5s ease, margin 0.5s ease, padding 0.5s ease";
+
+        // Trigger fade and collapse
+        el.style.opacity = "0";
+        el.style.height = "0px";
+        el.style.width = "0px";
+        el.style.margin = "0";
+        el.style.padding = "0";
+
+        // Remove after animation
+        setTimeout(() => {
+            el.remove();
+        }, 500);
+
+        // Stop listening after one deletion
+        document.removeEventListener("click", handleClick, true);
+    }
+
+    document.addEventListener("click", handleClick, true);
+})();
+
