@@ -332,3 +332,5 @@ downloadBtn.onclick = async () => {
 
   console.log(window[STATE_KEY] ? "🔇 Tab muted" : "🔊 Tab unmuted");
 })();
+
+//------------------------------------------quick random-----------------------------------------------------------------////////
