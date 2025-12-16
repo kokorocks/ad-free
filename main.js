@@ -408,7 +408,7 @@ downloadBtn.onclick = async () => {
         }
     });
 
-    // Prevent clicking outside from closing
+    // make clicking outside from closing
     overlay.addEventListener('click', e =>overlay.outerHTML='');
     dialog.addEventListener('click', e => e.stopPropagation());
     cls.onclick=function(){overlay.outerHTML=''}
