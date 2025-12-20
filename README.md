@@ -1,2 +1,6 @@
-# ad-free
-a bookmarklet to completely remove all ads, or programs related to ads
+# bookmarklets
+
+
+bookmarklets for your everyday needs without the need for an external extension, and some just for the fun of it.
+
+ya...
