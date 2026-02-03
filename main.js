@@ -832,3 +832,254 @@ function toggleFullscreen() {
 }
 
 toggleFullscreen()
+
+// ------------------------------------------------------------------------------autoclicker------------------------------------------------------//
+
+(() => {
+  /* ---------- TOGGLE ---------- */
+  if (window.__autoClickerCleanup) {
+    window.__autoClickerCleanup();
+    delete window.__autoClickerCleanup;
+    return;
+  }
+
+  /* ---------- MOUSE TRACKING ---------- */
+  let mouseX = 0, mouseY = 0;
+  const mouseMoveHandler = e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  };
+  document.addEventListener("mousemove", mouseMoveHandler);
+
+  function clickUnderMouse(buttonType) {
+    const el = document.elementFromPoint(mouseX, mouseY);
+    if (!el) return;
+
+    const buttonMap = {
+      left: 0,
+      middle: 1,
+      right: 2
+    };
+
+    const button = buttonMap[buttonType] ?? 0;
+
+    const eventInit = {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      button
+    };
+
+    el.dispatchEvent(new MouseEvent("mousedown", eventInit));
+    el.dispatchEvent(new MouseEvent("mouseup", eventInit));
+    el.dispatchEvent(new MouseEvent("click", eventInit));
+
+    if (button === 2) {
+      el.dispatchEvent(new MouseEvent("contextmenu", eventInit));
+    }
+  }
+
+  /* ---------- STYLES ---------- */
+  const style = document.createElement("style");
+  style.textContent = `
+  #autoClickerUI {
+    position: fixed;
+    top: 80px;
+    left: 80px;
+    width: 330px;
+    background: #161a22;
+    color: #eaeaf0;
+    font-family: system-ui, sans-serif;
+    border-radius: 14px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.6);
+    z-index: 999999;
+    user-select: none;
+  }
+  #autoClickerUI .header {
+    padding: 12px 14px;
+    background: linear-gradient(180deg,#1d2230,#161a22);
+    border-radius: 14px 14px 0 0;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+  }
+  #autoClickerUI .close {
+    width: 16px;
+    height: 16px;
+    background: #ff5f57;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #autoClickerUI .content {
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+  #autoClickerUI label {
+    font-size: 12px;
+    color: #9aa0b3;
+  }
+  #autoClickerUI input,
+  #autoClickerUI select {
+    width: 100%;
+    background: #0f1320;
+    color: #eaeaf0;
+    border: 1px solid #24283a;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  #autoClickerUI .controls {
+    display: flex;
+    gap: 10px;
+  }
+  #autoClickerUI button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .start { background: #4f8cff; color: #fff; }
+  .stop { background: #2a2f42; color: #9aa0b3; }
+  .running { color: #5cff9d; }
+  .stopped { color: #ff6b6b; }
+  `;
+  document.head.appendChild(style);
+
+  /* ---------- UI ---------- */
+  const ui = document.createElement("div");
+  ui.id = "autoClickerUI";
+  ui.innerHTML = `
+    <div class="header">
+      <span>Auto Clicker</span>
+      <div class="close"></div>
+    </div>
+
+    <div class="content">
+      <div>
+        <label>Clicks per second</label>
+        <input id="cps" type="number" value="10">
+      </div>
+
+      <div>
+        <label>Interval (ms)</label>
+        <input id="interval" type="number" value="100">
+      </div>
+
+      <div>
+        <label>Mouse button</label>
+        <select id="button">
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="middle">Middle</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Click mode</label>
+        <select id="mode">
+          <option value="toggle">Toggle</option>
+          <option value="hold">Hold</option>
+          <option value="burst">Single burst</option>
+        </select>
+      </div>
+
+      <div class="controls">
+        <button class="start">Start</button>
+        <button class="stop">Stop</button>
+      </div>
+
+      <div>
+        Status: <span id="status" class="stopped">Stopped</span><br>
+        Clicks: <span id="count">0</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ui);
+
+  /* ---------- DRAG ---------- */
+  const header = ui.querySelector(".header");
+  let dragging = false, ox = 0, oy = 0;
+
+  header.onmousedown = e => {
+    dragging = true;
+    ox = e.clientX - ui.offsetLeft;
+    oy = e.clientY - ui.offsetTop;
+  };
+
+  document.onmousemove = e => {
+    if (!dragging) return;
+    ui.style.left = e.clientX - ox + "px";
+    ui.style.top = e.clientY - oy + "px";
+  };
+
+  document.onmouseup = () => dragging = false;
+
+  /* ---------- LOGIC ---------- */
+  let timer = null;
+  let clicks = 0;
+
+  const cpsInput = ui.querySelector("#cps");
+  const intervalInput = ui.querySelector("#interval");
+  const buttonSelect = ui.querySelector("#button");
+  const modeSelect = ui.querySelector("#mode");
+  const statusEl = ui.querySelector("#status");
+  const countEl = ui.querySelector("#count");
+
+  cpsInput.oninput = () => {
+    const cps = Math.max(1, Number(cpsInput.value));
+    intervalInput.value = Math.round(1000 / cps);
+  };
+
+  intervalInput.oninput = () => {
+    const interval = Math.max(1, Number(intervalInput.value));
+    cpsInput.value = Math.round(1000 / interval);
+  };
+
+  function start() {
+    if (timer) return;
+
+    const interval = Math.max(1, Number(intervalInput.value));
+    const button = buttonSelect.value;
+    const mode = modeSelect.value;
+
+    statusEl.textContent = "Running";
+    statusEl.className = "running";
+
+    if (mode === "burst") {
+      clickUnderMouse(button);
+      clicks++;
+      countEl.textContent = clicks;
+      stop();
+      return;
+    }
+
+    timer = setInterval(() => {
+      clickUnderMouse(button);
+      clicks++;
+      countEl.textContent = clicks;
+    }, interval);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    statusEl.textContent = "Stopped";
+    statusEl.className = "stopped";
+  }
+
+  ui.querySelector(".start").onclick = start;
+  ui.querySelector(".stop").onclick = stop;
+  ui.querySelector(".close").onclick = () => window.__autoClickerCleanup();
+
+  /* ---------- CLEANUP ---------- */
+  window.__autoClickerCleanup = () => {
+    stop();
+    document.removeEventListener("mousemove", mouseMoveHandler);
+    style.remove();
+    ui.remove();
+  };
+})();
